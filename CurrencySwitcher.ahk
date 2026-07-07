@@ -201,11 +201,11 @@ ShowSettingsGui() {
     SettingsGui := Gui(, "Currency Switcher – Settings")
     SettingsGui.OnEvent("Close", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
 
-    SettingsGui.Add("Text", "w360", "Check the symbols to cycle through and set their order:")
-    SettingsGui.Add("Text", "w360 cGray",
-        "Tip: press the hotkey repeatedly to cycle. The cycle resets after "
+    SettingsGui.Add("Text", "w360", "Edit the symbols to cycle through and set their order.")
+    SettingsGui.Add("Text", "w360", 
+        "Press the hotkey repeatedly to cycle. The cycle resets after "
         Round(CycleTimeoutMs / 1000) " seconds of inactivity, or as soon as "
-        "you move the caret (arrow keys, mouse click, Enter, etc.).")
+        "you press any other keyboard key.")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
     LV.ModifyCol(2, 250)
@@ -249,7 +249,8 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Text", "xm y+15", "Hotkey:")
     HkCtrl := SettingsGui.Add("Hotkey", "x+10 w150", CurrentHotkey)
-    SettingsGui.Add("Text", "xm", "(Default is Shift+4. Leave as-is unless you want a different key.)")
+    SettingsGui.Add("Text", "xm", "Default hotkey: Shift+4.")
+    SettingsGui.Add("Text", "xm", "Focus the field above and press the key combination you want.")
 
     SettingsGui.Add("Button", "xm y+15 w100 Default", "Save").OnEvent("Click", SaveClicked)
     SettingsGui.Add("Button", "x+10 w100", "Cancel").OnEvent("Click", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
