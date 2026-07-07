@@ -216,12 +216,6 @@ ShowSettingsGui() {
     global SettingsGui, LV, HkCtrl, CustomEdit, RowKeys, ExitBtnHwnd
     global DefaultSymbols, ActiveSymbols, CurrentHotkey, SettingsFile
 
-    ; Silence the currency hotkey (and the interrupt keys) while the Settings
-    ; window is open. Otherwise pressing e.g. Shift+4 to *set* the hotkey would
-    ; instead fire the currency hotkey — swallowing the keystroke before the
-    ; hotkey field can see it, which is what made Shift+4 show up as "None".
-    Suspend(true)
-
     if (SettingsGui is Gui) {
         SettingsGui.Show()
         return
@@ -278,6 +272,12 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Text", "xm y+15", "Hotkey:")
     HkCtrl := SettingsGui.Add("Hotkey", "x+10 w150", CurrentHotkey)
+    ; Silence the currency hotkey (and the per-key interrupt hotkeys) only while
+    ; this field is focused. Otherwise pressing e.g. Shift+4 to *set* the hotkey
+    ; would instead fire the currency hotkey — swallowing the keystroke before
+    ; the field can see it, which is what made Shift+4 show up as "None".
+    HkCtrl.OnEvent("Focus", (*) => Suspend(true))
+    HkCtrl.OnEvent("LoseFocus", (*) => Suspend(false))
     SettingsGui.Add("Text", "xm", "Default hotkey: Shift+4.")
     SettingsGui.Add("Text", "xm w360",
         "Focus the field above and press the key combination you want. A few "
@@ -382,8 +382,8 @@ SaveClicked(*) {
     TrayTip("Settings saved. Press your hotkey to cycle: " JoinArr(ActiveSymbols, " "), "Currency Switcher")
 }
 
-; Re-enables the app's hotkeys (which are suspended while Settings is open)
-; and closes the window.
+; Closes the window, making sure the app's hotkeys are re-enabled in case it
+; was closed while the hotkey field still held focus (see its Focus handler).
 CloseSettingsGui() {
     global SettingsGui
     Suspend(false)
