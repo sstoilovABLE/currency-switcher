@@ -32,6 +32,9 @@ LV := 0
 HkCtrl := 0
 CustomEdit := 0
 RowKeys := []                   ; parallel to LV rows: original (unrenamed) name of each row
+ExitBtnHwnd := 0                ; used to show a hover tooltip on the Exit Script button
+
+OnMessage(0x0200, WM_MOUSEMOVE)   ; WM_MOUSEMOVE: hover tooltip
 
 LoadSettings()
 ApplyHotkey(IniRead(SettingsFile, "General", "Hotkey", "+4"))
@@ -163,7 +166,7 @@ LoadNames() {
 ; ------------------------------------------------------------
 
 ShowSettingsGui() {
-    global SettingsGui, LV, HkCtrl, CustomEdit, RowKeys
+    global SettingsGui, LV, HkCtrl, CustomEdit, RowKeys, ExitBtnHwnd
     global DefaultSymbols, ActiveSymbols, CurrentHotkey, SettingsFile
 
     if (SettingsGui is Gui) {
@@ -174,7 +177,7 @@ ShowSettingsGui() {
     SettingsGui := Gui(, "Currency Switcher – Settings")
     SettingsGui.OnEvent("Close", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
 
-    SettingsGui.Add("Text", , "Check the symbols to cycle through and set their order. Double-click a name to rename it:")
+    SettingsGui.Add("Text", "w360", "Check the symbols to cycle through and set their order. Double-click a name to rename it:")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
     LV.ModifyCol(2, 250)
@@ -222,6 +225,15 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Button", "xm y+15 w100 Default", "Save").OnEvent("Click", SaveClicked)
     SettingsGui.Add("Button", "x+10 w100", "Cancel").OnEvent("Click", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
+
+    ; Plain push buttons ignore custom text color, so a pale red fill is the
+    ; simplest reliable stand-in for a "red" button. Right-aligned to the
+    ; ListView's right edge (MarginX + its width of 360).
+    exitX := SettingsGui.MarginX + 360 - 100
+    ExitBtn := SettingsGui.Add("Button", "x" exitX " yp w100 BackgroundFFE0E0", "Exit Script")
+    ExitBtn.OnEvent("Click", ExitClicked)
+    ExitBtnHwnd := ExitBtn.Hwnd
+
     SettingsGui.Show()
 }
 
@@ -303,7 +315,25 @@ DeleteRow(*) {
 }
 
 SaveClicked(*) {
-    global LV, HkCtrl, SettingsGui, ActiveSymbols, CycleIndex, RowKeys
+    global SettingsGui, ActiveSymbols
+    if !ApplySettingsFromGui()
+        return
+    SettingsGui.Destroy()
+    SettingsGui := 0
+    TrayTip("Settings saved. Press your hotkey to cycle: " JoinArr(ActiveSymbols, " "), "Currency Switcher")
+}
+
+ExitClicked(*) {
+    if !ApplySettingsFromGui()
+        return
+    ExitApp()
+}
+
+; Reads the settings GUI controls, validates and applies them, and writes
+; them to the .ini. Returns true on success, false if validation failed
+; (in which case the GUI is left open so the user can fix it).
+ApplySettingsFromGui() {
+    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys
     symbols := []
     customs := []
     names := []
@@ -320,21 +350,34 @@ SaveClicked(*) {
     }
     if (symbols.Length = 0) {
         MsgBox("Select at least one symbol.", "Currency Switcher", "Icon!")
-        return
+        return false
     }
     hk := HkCtrl.Value != "" ? HkCtrl.Value : "+4"
     try {
         ApplyHotkey(hk)
     } catch as e {
         MsgBox("Could not register that hotkey: " e.Message, "Currency Switcher", "Icon!")
-        return
+        return false
     }
     ActiveSymbols := symbols
     CycleIndex := 0
     SaveSettings(symbols, hk, customs, names)
-    SettingsGui.Destroy()
-    SettingsGui := 0
-    TrayTip("Settings saved. Press your hotkey to cycle: " JoinArr(symbols, " "), "Currency Switcher")
+    return true
+}
+
+; Shows a tooltip while hovering the Exit Script button.
+WM_MOUSEMOVE(wParam, lParam, msg, hwnd) {
+    global ExitBtnHwnd
+    static shown := false
+    if (ExitBtnHwnd && hwnd = ExitBtnHwnd) {
+        if !shown {
+            ToolTip("Saves your current settings, then exits Currency Switcher")
+            shown := true
+        }
+    } else if shown {
+        ToolTip()
+        shown := false
+    }
 }
 
 JoinArr(arr, sep) {
