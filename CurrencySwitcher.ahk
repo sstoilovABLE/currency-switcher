@@ -223,7 +223,7 @@ ShowSettingsGui() {
     }
 
     SettingsGui := Gui(, "Currency Switcher – Settings")
-    SettingsGui.OnEvent("Close", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
+    SettingsGui.OnEvent("Close", (*) => CloseSettingsGui())
 
     SettingsGui.Add("Text", "w360", "Edit the symbols to cycle through and set their order.")
     SettingsGui.Add("Text", "w360",
@@ -273,11 +273,19 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Text", "xm y+15", "Hotkey:")
     HkCtrl := SettingsGui.Add("Hotkey", "x+10 w150", CurrentHotkey)
+    ; Silence the currency hotkey (and the per-key interrupt hotkeys) only while
+    ; this field is focused. Otherwise pressing e.g. Shift+4 to *set* the hotkey
+    ; would instead fire the currency hotkey — swallowing the keystroke before
+    ; the field can see it, which is what made Shift+4 show up as "None".
+    HkCtrl.OnEvent("Focus", (*) => Suspend(true))
+    HkCtrl.OnEvent("LoseFocus", (*) => Suspend(false))
     SettingsGui.Add("Text", "xm", "Default hotkey: Shift+4.")
-    SettingsGui.Add("Text", "xm", "Focus the field above and press the key combination you want.")
+    SettingsGui.Add("Text", "xm w360",
+        "Focus the field above and press the key combination you want. A few "
+        "keys can't be used on their own — see the README for the list.")
 
     SettingsGui.Add("Button", "xm y+15 w100 Default", "Save").OnEvent("Click", SaveClicked)
-    SettingsGui.Add("Button", "x+10 w100", "Cancel").OnEvent("Click", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
+    SettingsGui.Add("Button", "x+10 w100", "Cancel").OnEvent("Click", (*) => CloseSettingsGui())
 
     ; Plain push buttons ignore custom text color, so a pale red fill is the
     ; simplest reliable stand-in for a "red" button. Right-aligned to the
@@ -369,12 +377,22 @@ DeleteRow(*) {
 }
 
 SaveClicked(*) {
-    global SettingsGui, ActiveSymbols
+    global ActiveSymbols
     if !ApplySettingsFromGui()
         return
-    SettingsGui.Destroy()
-    SettingsGui := 0
+    CloseSettingsGui()
     TrayTip("Settings saved. Press your hotkey to cycle: " JoinArr(ActiveSymbols, " "), "Currency Switcher")
+}
+
+; Closes the window, making sure the app's hotkeys are re-enabled in case it
+; was closed while the hotkey field still held focus (see its Focus handler).
+CloseSettingsGui() {
+    global SettingsGui
+    Suspend(false)
+    if (SettingsGui is Gui) {
+        SettingsGui.Destroy()
+        SettingsGui := 0
+    }
 }
 
 ExitClicked(*) {
@@ -387,7 +405,7 @@ ExitClicked(*) {
 ; them to the .ini. Returns true on success, false if validation failed
 ; (in which case the GUI is left open so the user can fix it).
 ApplySettingsFromGui() {
-    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys
+    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys, CurrentHotkey
     symbols := []
     customs := []
     names := []
@@ -406,7 +424,10 @@ ApplySettingsFromGui() {
         MsgBox("Select at least one symbol.", "Currency Switcher", "Icon!")
         return false
     }
-    hk := HkCtrl.Value != "" ? HkCtrl.Value : "+4"
+    ; A blank value means the picker is showing "None" (e.g. the user pressed a
+    ; combination it can't record, like Ctrl+Backspace). Keep the last working
+    ; hotkey instead of clearing it or falling back to the default.
+    hk := HkCtrl.Value != "" ? HkCtrl.Value : (CurrentHotkey != "" ? CurrentHotkey : "+4")
     try {
         ApplyHotkey(hk)
     } catch as e {

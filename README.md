@@ -37,9 +37,19 @@ Right-click the tray icon and choose **Settings** to open the configuration wind
 - **Enable/disable symbols** — check or uncheck symbols in the list to include or exclude them from the cycle.
 - **Reorder symbols** — select a symbol and use **Move Up** / **Move Down** to change its position; the list order is the cycle order.
 - **Add a custom symbol** — type it into the text field and click **Add**. Custom symbols can also be removed.
-- **Change the hotkey** — use the hotkey picker control to record a new key combination (default `Shift+4`).
+- **Change the hotkey** — focus the hotkey field and press the key combination you want (default `Shift+4`). See [Hotkeys that can't be set](#hotkeys-that-cant-be-set) for combinations the hotkey picker doesn't accept.
 
 All settings are saved to `CurrencySwitcher.ini`, stored next to the script, and are loaded automatically the next time it runs. You can safely delete the `.ini` - it will be recreated the next time you run the script.
+
+### Hotkeys that can't be set
+
+The hotkey picker is a standard Windows control, and it doesn't accept a few combinations. If you press one of these, the field shows `None` and, if you save while it shows `None`, your previous hotkey is kept unchanged:
+
+- **A modifier key on its own** — `Shift`, `Ctrl` or `Alt` by themselves. A hotkey needs a normal key in addition to any modifiers.
+- **`Ctrl + Tab`** — reserved by Windows for switching between tabs/windows.
+- **Anything combined with `Backspace` or `Delete`** — e.g. `Shift + Backspace`, `Ctrl + Delete`. The picker uses `Backspace`/`Delete` to clear the field, so it can't record them as part of a hotkey.
+
+Pick a different combination (for example a letter, digit, or function key, optionally with modifiers) for these cases.
 
 The tray icon menu also offers **Reload** (restart the script after editing settings or the file) and **Exit**.
 
