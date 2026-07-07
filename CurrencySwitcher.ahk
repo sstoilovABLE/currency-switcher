@@ -210,7 +210,8 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Button", "xm w80", "Move Up").OnEvent("Click", (*) => MoveRow(-1))
     SettingsGui.Add("Button", "x+10 w80", "Move Down").OnEvent("Click", (*) => MoveRow(1))
-    SettingsGui.Add("Button", "x+10 w110", "Remove Custom").OnEvent("Click", RemoveCustom)
+    SettingsGui.Add("Button", "x+10 w80", "Rename").OnEvent("Click", RenameClicked)
+    SettingsGui.Add("Button", "x+10 w80", "Delete").OnEvent("Click", DeleteRow)
 
     SettingsGui.Add("Text", "xm y+15", "Add a custom symbol:")
     CustomEdit := SettingsGui.Add("Edit", "x+10 w80 Limit10")
@@ -263,6 +264,16 @@ RenameRow(ctrl, row) {
     LV.Modify(row, "Select Focus", sym, newName)
 }
 
+RenameClicked(*) {
+    global LV
+    row := LV.GetNext(0, "Focused")
+    if (!row) {
+        MsgBox("Select a row to rename first.", "Currency Switcher", "Iconi")
+        return
+    }
+    RenameRow(0, row)
+}
+
 AddCustom(*) {
     global LV, CustomEdit, RowKeys
     sym := Trim(CustomEdit.Value)
@@ -281,13 +292,11 @@ AddCustom(*) {
     CustomEdit.Value := ""
 }
 
-RemoveCustom(*) {
+DeleteRow(*) {
     global LV, RowKeys
     row := LV.GetNext(0, "Focused")
-    if (!row)
-        return
-    if (RowKeys[row] != "Custom") {
-        MsgBox("Only custom symbols can be removed. Uncheck built-in symbols to disable them.", "Currency Switcher", "Iconi")
+    if (!row) {
+        MsgBox("Select a row to delete first.", "Currency Switcher", "Iconi")
         return
     }
     LV.Delete(row)
