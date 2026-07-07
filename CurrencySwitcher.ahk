@@ -16,8 +16,10 @@ DefaultSymbols := [
     ["€", "Euro"],
     ["£", "British Pound"],
     ["₹", "Indian Rupee"],
-    ["¥", "Chinese Yuan (Renminbi)"],
-    ["¥", "Japanese Yen"],
+    ["¥", "Yuan / Yen (Renminbi)"],
+    ["§", "Section"],
+    ["©", "Copyright"],
+    ["™", "Trademark"],
 ]
 
 ; Runtime state
@@ -141,7 +143,7 @@ LoadCustomSymbols() {
 }
 
 ; Names are keyed as "symbol|originalName" so renaming a symbol persists
-; even though two default symbols can share the same glyph (e.g. ¥).
+; even though two default symbols can share the same glyph (e.g. yuan/yen ¥).
 LoadNames() {
     global SettingsFile
     result := Map()
@@ -177,7 +179,7 @@ ShowSettingsGui() {
     SettingsGui := Gui(, "Currency Switcher – Settings")
     SettingsGui.OnEvent("Close", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
 
-    SettingsGui.Add("Text", "w360", "Check the symbols to cycle through and set their order. Double-click a name to rename it:")
+    SettingsGui.Add("Text", "w360", "Check the symbols to cycle through and set their order:")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
     LV.ModifyCol(2, 250)
