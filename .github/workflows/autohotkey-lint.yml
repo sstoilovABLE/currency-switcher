@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -50,7 +53,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          & "$env:AHK_EXE" /ErrorStdOut /iLib "$env:RUNNER_TEMP\CurrencySwitcher.includes.ahk" ".\CurrencySwitcher.ahk"
+          & "$env:AHK_EXE" /ErrorStdOut /Validate ".\CurrencySwitcher.ahk"
 
       - name: Best practice checks
         shell: pwsh
