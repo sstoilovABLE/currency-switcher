@@ -228,7 +228,10 @@ ShowSettingsGui() {
 
     ; Native Win32 buttons can't have a custom border color without owner-draw,
     ; so a pale red fill + dark red text is used as the closest supported stand-in.
+    ; Themed (visual-styles) buttons ignore custom text/background colors entirely,
+    ; so the theme is switched off for just this control to let the colors apply.
     ExitBtn := SettingsGui.Add("Button", "x+10 w100 BackgroundFFE0E0", "Exit Script")
+    DllCall("uxtheme\SetWindowTheme", "ptr", ExitBtn.Hwnd, "ptr", 0, "ptr", 0)
     ExitBtn.SetFont("cC00000")
     ExitBtn.OnEvent("Click", ExitClicked)
     ExitBtnHwnd := ExitBtn.Hwnd
