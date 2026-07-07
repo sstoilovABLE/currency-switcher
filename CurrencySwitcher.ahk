@@ -202,10 +202,10 @@ ShowSettingsGui() {
     SettingsGui.OnEvent("Close", (*) => (SettingsGui.Destroy(), SettingsGui := 0))
 
     SettingsGui.Add("Text", "w360", "Edit the symbols to cycle through and set their order.")
-    SettingsGui.Add("Text", "w360", 
+    SettingsGui.Add("Text", "w360",
         "Press the hotkey repeatedly to cycle. The cycle resets after "
         Round(CycleTimeoutMs / 1000) " seconds of inactivity, or as soon as "
-        "you press any other keyboard key.")
+        "you move the caret (arrow keys, mouse click, Enter, etc.).")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
     LV.ModifyCol(2, 250)
