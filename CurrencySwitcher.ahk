@@ -180,7 +180,7 @@ ShowSettingsGui() {
     SettingsGui.Add("Text", , "Check the symbols to cycle through and set their order. Double-click a name to rename it:")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
-    LV.ModifyCol(2, 250)
+    LV.ModifyCol(2, 280)
     LV.OnEvent("DoubleClick", RenameRow)
 
     ; Build row list: saved order first (enabled), then remaining known symbols
