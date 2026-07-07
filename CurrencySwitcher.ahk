@@ -219,6 +219,7 @@ ShowSettingsGui() {
 
     if (SettingsGui is Gui) {
         SettingsGui.Show()
+        WinActivate("ahk_id " SettingsGui.Hwnd)
         SetTimer(WatchHotkeyFocus, 30)
         return
     }
@@ -297,6 +298,7 @@ ShowSettingsGui() {
     SetTimer(WatchHotkeyFocus, 30)
 
     SettingsGui.Show()
+    WinActivate("ahk_id " SettingsGui.Hwnd)
 }
 
 ; While the hotkey field has keyboard focus, suspend the currency hotkey and
