@@ -228,7 +228,8 @@ ShowSettingsGui() {
 
     ; Native Win32 buttons can't have a custom border color without owner-draw,
     ; so a pale red fill + dark red text is used as the closest supported stand-in.
-    ExitBtn := SettingsGui.Add("Button", "x+10 w100 cC00000 BackgroundFFE0E0", "Exit Script")
+    ExitBtn := SettingsGui.Add("Button", "x+10 w100 BackgroundFFE0E0", "Exit Script")
+    ExitBtn.SetFont("cC00000")
     ExitBtn.OnEvent("Click", ExitClicked)
     ExitBtnHwnd := ExitBtn.Hwnd
     SettingsGui.Show()
