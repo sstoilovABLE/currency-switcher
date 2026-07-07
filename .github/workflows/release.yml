@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Compile and publish release
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install AutoHotkey v2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
+          $asset = $release.assets |
+            Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } |
+            Select-Object -First 1
+
+          if (-not $asset) {
+            throw 'Could not find the AutoHotkey release zip asset.'
+          }
+
+          $zipPath = Join-Path $env:RUNNER_TEMP $asset.name
+          $installDir = Join-Path $env:RUNNER_TEMP 'autohotkey'
+
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
+          Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+
+          $ahk2Exe = Get-ChildItem -Path $installDir -Recurse -Filter 'Ahk2Exe.exe' |
+            Select-Object -First 1
+          $baseExe = Get-ChildItem -Path $installDir -Recurse -Filter 'AutoHotkey64.exe' |
+            Select-Object -First 1
+
+          if (-not $ahk2Exe) {
+            throw 'Could not find Ahk2Exe.exe after extraction.'
+          }
+
+          if (-not $baseExe) {
+            throw 'Could not find AutoHotkey64.exe after extraction.'
+          }
+
+          "AHK2EXE=$($ahk2Exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AHK_BASE_EXE=$($baseExe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Compile executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $outputPath = Join-Path $env:RUNNER_TEMP 'CurrencySwitcher.exe'
+
+          & "$env:AHK2EXE" /in ".\CurrencySwitcher.ahk" /out "$outputPath" /base "$env:AHK_BASE_EXE"
+
+          if (-not (Test-Path $outputPath)) {
+            throw "Compilation finished without creating $outputPath."
+          }
+
+          "RELEASE_ASSET=$outputPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          gh release create "$env:GITHUB_REF_NAME" "$env:RELEASE_ASSET" `
+            --title "$env:GITHUB_REF_NAME" `
+            --generate-notes

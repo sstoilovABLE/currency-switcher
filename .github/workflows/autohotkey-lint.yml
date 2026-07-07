@@ -1,0 +1,91 @@
+name: AutoHotkey lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint and best practices
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install AutoHotkey v2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
+          $asset = $release.assets |
+            Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } |
+            Select-Object -First 1
+
+          if (-not $asset) {
+            throw 'Could not find the AutoHotkey release zip asset.'
+          }
+
+          $zipPath = Join-Path $env:RUNNER_TEMP $asset.name
+          $installDir = Join-Path $env:RUNNER_TEMP 'autohotkey'
+
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
+          Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+
+          $ahkExe = Get-ChildItem -Path $installDir -Recurse -Filter 'AutoHotkey64.exe' |
+            Select-Object -First 1
+
+          if (-not $ahkExe) {
+            throw 'Could not find AutoHotkey64.exe after extraction.'
+          }
+
+          "AHK_EXE=$($ahkExe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & "$env:AHK_EXE" /ErrorStdOut /Validate ".\CurrencySwitcher.ahk"
+
+      - name: Best practice checks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $scriptPath = '.\CurrencySwitcher.ahk'
+          $content = Get-Content -Path $scriptPath -Raw -Encoding UTF8
+          $lines = Get-Content -Path $scriptPath -Encoding UTF8
+          $failures = [System.Collections.Generic.List[string]]::new()
+
+          if ($content -notmatch '(?m)^\s*#Requires\s+AutoHotkey\s+v2') {
+            $failures.Add('CurrencySwitcher.ahk must declare #Requires AutoHotkey v2.')
+          }
+
+          if ($content -notmatch '(?m)^\s*#SingleInstance\s+\w+') {
+            $failures.Add('CurrencySwitcher.ahk should declare #SingleInstance to avoid duplicate running copies.')
+          }
+
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '\s+$') {
+              $failures.Add("Line $($i + 1) has trailing whitespace.")
+            }
+          }
+
+          if ($content -match '[A-Za-z]:\\Users\\') {
+            $failures.Add('CurrencySwitcher.ahk should not contain hardcoded user-profile paths.')
+          }
+
+          if ($failures.Count -gt 0) {
+            $failures | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+
+          Write-Host 'AutoHotkey syntax and best practice checks passed.'
