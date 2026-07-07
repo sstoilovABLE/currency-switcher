@@ -54,10 +54,10 @@ Each press of the hotkey either types the next symbol or replaces the one just t
 
 ### When the cycle resets
 
-The cycle resets — so the next press starts over from the first symbol — in either of these cases:
+The cycle resets — so the next press starts over from the first symbol — as soon as either of these happens, whichever comes first:
 
 - **The 3-second window elapses.** If you don't press the hotkey again within **3 seconds**, the cycle ends and the next press starts fresh.
-- **You move the text caret.** Pressing an arrow key, clicking with the mouse, or pressing Home/End, Page Up/Down, Delete, Enter, Tab, or Escape ends the cycle immediately. This way, after moving the cursor elsewhere, your next hotkey press inserts the first symbol (`$`) rather than continuing to cycle where the caret no longer is.
+- **You press any other keyboard key.** Typing anything else — including arrow keys, Home/End, Page Up/Down, Delete, Enter, Tab, Escape, or any regular character — ends the cycle immediately, so your next hotkey press inserts the first symbol (`$`) again instead of continuing where the cycle left off. (Holding a modifier key like Shift or Ctrl by itself doesn't count, since that's how you hold the hotkey down in the first place.)
 
 This 3-second window is also noted in the Settings window for reference.
 

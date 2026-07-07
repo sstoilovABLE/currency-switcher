@@ -27,6 +27,19 @@ ActiveSymbols := []             ; symbols enabled for cycling, in order
 CurrentHotkey := ""             ; currently registered hotkey
 CycleIndex := 0                 ; 0 = not cycling
 LastPressTick := 0
+Suppressing := false            ; true while this script is sending its own keystrokes
+
+; Modifier keys are excluded from the "any other key" interrupt set because
+; they are held down as part of *composing* the currency hotkey itself
+; (e.g. holding Shift before pressing 4 for Shift+4); they don't represent
+; typing a separate key.
+ModifierVKs := Map(
+    0x10, true, 0x11, true, 0x12, true,     ; Shift, Ctrl, Alt (generic)
+    0x5B, true, 0x5C, true,                 ; LWin, RWin
+    0xA0, true, 0xA1, true,                 ; L/R Shift
+    0xA2, true, 0xA3, true,                 ; L/R Ctrl
+    0xA4, true, 0xA5, true,                 ; L/R Alt
+)
 
 ; GUI globals
 SettingsGui := 0
@@ -70,7 +83,7 @@ ApplyHotkey(newHotkey) {
 }
 
 OnCurrencyKey(*) {
-    global CycleIndex, LastPressTick, ActiveSymbols
+    global CycleIndex, LastPressTick, ActiveSymbols, Suppressing
     if (ActiveSymbols.Length = 0) {
         ; Nothing enabled: pass the key through as typed
         PassThrough()
@@ -82,41 +95,51 @@ OnCurrencyKey(*) {
     } else {
         ; Delete the previously typed symbol, then advance
         prev := ActiveSymbols[CycleIndex]
+        Suppressing := true
         Send("{BS " StrLen(prev) "}")
+        Suppressing := false
         CycleIndex := Mod(CycleIndex, ActiveSymbols.Length) + 1
     }
+    Suppressing := true
     SendText(ActiveSymbols[CycleIndex])
+    Suppressing := false
     LastPressTick := now
 }
 
-; Keys that move the caret or otherwise break the "keep pressing to cycle"
-; flow. Once any of these fire, the next hotkey press must start a fresh
-; symbol rather than backspacing over whatever is now under the caret.
+; Registers every keyboard key (except modifiers) as a pass-through hotkey
+; that resets the cycle. This way, pressing any other key breaks the "keep
+; pressing to cycle" flow immediately, rather than only after the 3-second
+; timeout. AHK gives an exact-modifier hotkey (like the currency hotkey
+; itself) precedence over these "*"-wildcard ones for the same keystroke,
+; so this doesn't interfere with the currency hotkey's own key.
 RegisterInterruptKeys() {
-    interruptKeys := [
-        "Left", "Right", "Up", "Down",
-        "Home", "End", "PgUp", "PgDn",
-        "Delete", "Enter", "Tab", "Escape",
-        "LButton", "RButton", "MButton",
-    ]
-    for key in interruptKeys {
-        ; "~*" keeps the key's normal behavior and ignores modifier state.
-        try Hotkey("~*" key, (*) => ResetCycle(), "On")
+    global ModifierVKs
+    loop 254 {
+        vk := A_Index
+        if ModifierVKs.Has(vk)
+            continue
+        try Hotkey(Format("~*vk{:X}", vk), ResetCycle, "On")
     }
 }
 
-ResetCycle() {
-    global CycleIndex
+; Ignore resets caused by this script's own simulated keystrokes (e.g. the
+; backspace/retype used while cycling), so cycling doesn't reset itself.
+ResetCycle(*) {
+    global CycleIndex, Suppressing
+    if Suppressing
+        return
     CycleIndex := 0
 }
 
 PassThrough() {
-    global CurrentHotkey
+    global CurrentHotkey, Suppressing
     ; Re-send the hotkey's own key so it behaves normally
     key := RegExReplace(CurrentHotkey, "^[#!^+<>*~$]+")
     mods := SubStr(CurrentHotkey, 1, StrLen(CurrentHotkey) - StrLen(key))
     mods := RegExReplace(mods, "[*~$<>]")   ; strip non-modifier prefixes
+    Suppressing := true
     Send("{Blind}" mods "{" key "}")
+    Suppressing := false
 }
 
 ; ------------------------------------------------------------
@@ -205,7 +228,7 @@ ShowSettingsGui() {
     SettingsGui.Add("Text", "w360",
         "Press the hotkey repeatedly to cycle. The cycle resets after "
         Round(CycleTimeoutMs / 1000) " seconds of inactivity, or as soon as "
-        "you move the caret (arrow keys, mouse click, Enter, etc.).")
+        "you press any other keyboard key — whichever happens first.")
     LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
     LV.ModifyCol(1, 80)
     LV.ModifyCol(2, 250)
