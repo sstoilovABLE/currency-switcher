@@ -218,6 +218,7 @@ ShowSettingsGui() {
 
     if (SettingsGui is Gui) {
         SettingsGui.Show()
+        SetTimer(WatchHotkeyFocus, 30)
         return
     }
 
@@ -272,12 +273,6 @@ ShowSettingsGui() {
 
     SettingsGui.Add("Text", "xm y+15", "Hotkey:")
     HkCtrl := SettingsGui.Add("Hotkey", "x+10 w150", CurrentHotkey)
-    ; Silence the currency hotkey (and the per-key interrupt hotkeys) only while
-    ; this field is focused. Otherwise pressing e.g. Shift+4 to *set* the hotkey
-    ; would instead fire the currency hotkey — swallowing the keystroke before
-    ; the field can see it, which is what made Shift+4 show up as "None".
-    HkCtrl.OnEvent("Focus", (*) => Suspend(true))
-    HkCtrl.OnEvent("LoseFocus", (*) => Suspend(false))
     SettingsGui.Add("Text", "xm", "Default hotkey: Shift+4.")
     SettingsGui.Add("Text", "xm w360",
         "Focus the field above and press the key combination you want. A few "
@@ -294,7 +289,33 @@ ShowSettingsGui() {
     ExitBtn.OnEvent("Click", ExitClicked)
     ExitBtnHwnd := ExitBtn.Hwnd
 
+    ; Watch which control has focus so we can silence the currency hotkey only
+    ; while the hotkey field is focused (see WatchHotkeyFocus).
+    SetTimer(WatchHotkeyFocus, 30)
+
     SettingsGui.Show()
+}
+
+; While the hotkey field has keyboard focus, suspend the currency hotkey and
+; the per-key interrupt hotkeys. Otherwise pressing e.g. Shift+4 to *set* the
+; hotkey would instead fire the currency hotkey — swallowing the keystroke
+; before the field could see it, which is what made Shift+4 show up as "None".
+; The Hotkey control has no Focus/LoseFocus event, so we poll Gui.FocusedCtrl
+; (A_IsSuspended is the single source of truth, so this stays correct even
+; across window close/reopen).
+WatchHotkeyFocus() {
+    global SettingsGui, HkCtrl
+    onField := false
+    if (SettingsGui is Gui) {
+        focused := 0
+        try focused := SettingsGui.FocusedCtrl
+        if (IsObject(focused) && IsObject(HkCtrl))
+            try onField := (focused.Hwnd = HkCtrl.Hwnd)
+    }
+    if (onField && !A_IsSuspended)
+        Suspend(true)
+    else if (!onField && A_IsSuspended)
+        Suspend(false)
 }
 
 MoveRow(dir) {
@@ -382,10 +403,11 @@ SaveClicked(*) {
     TrayTip("Settings saved. Press your hotkey to cycle: " JoinArr(ActiveSymbols, " "), "Currency Switcher")
 }
 
-; Closes the window, making sure the app's hotkeys are re-enabled in case it
-; was closed while the hotkey field still held focus (see its Focus handler).
+; Closes the window: stop watching for focus and make sure the app's hotkeys
+; are re-enabled in case it was closed while the hotkey field held focus.
 CloseSettingsGui() {
     global SettingsGui
+    SetTimer(WatchHotkeyFocus, 0)
     Suspend(false)
     if (SettingsGui is Gui) {
         SettingsGui.Destroy()
