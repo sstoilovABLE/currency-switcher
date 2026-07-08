@@ -1,6 +1,13 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Skip publishing the release'
+        required: false
+        default: true
+        type: boolean
   push:
     tags:
       - '*'
@@ -74,6 +81,7 @@ jobs:
           "RELEASE_ASSET=$outputPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Publish GitHub release
+        if: ${{ !inputs.dry_run }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -83,3 +91,6 @@ jobs:
           gh release create "$env:GITHUB_REF_NAME" "$env:RELEASE_ASSET" `
             --title "$env:GITHUB_REF_NAME" `
             --notes-from-tag
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: echo "Dry run only; release publishing skipped."
