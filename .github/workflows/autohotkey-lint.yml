@@ -20,10 +20,18 @@ jobs:
 
       - name: Install AutoHotkey v2
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
+          # Authenticate the GitHub API call below. Anonymous requests are
+          # limited to 60/hour per runner IP, which is shared across GitHub's
+          # hosted runners and is routinely exhausted; authenticated requests
+          # get 1,000/hour, so send the workflow token with the API call.
+          $apiHeaders = @{ Authorization = "Bearer $env:GH_TOKEN" }
+
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest' -Headers $apiHeaders
           $asset = $release.assets |
             Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } |
             Select-Object -First 1
