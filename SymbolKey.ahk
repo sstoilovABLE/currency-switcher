@@ -17,7 +17,7 @@ DefaultSymbols := [
     ["€", "Euro"],
     ["£", "British Pound"],
     ["₹", "Indian Rupee"],
-    ["¥", "Yuan / Yen (Renminbi)"],
+    ["¥", "Yuan / Yen"],
     ["§", "Section"],
     ["©", "Copyright"],
     ["™", "Trademark"],
