@@ -4,21 +4,11 @@
 
 SymbolKey is a tiny AutoHotkey v2 utility for Windows that lets you type hard-to-reach symbols with one hotkey.
 
-Press your chosen hotkey once to insert the first enabled symbol. Press it again within the short cycling window and SymbolKey replaces that symbol with the next one in your list. This makes one key combination work for symbols you might otherwise search for, copy, paste, or memorize Alt codes for.
-
-It works well for currency symbols such as `$`, `€`, `£`, `₹`, and `¥`, but it is not limited to money. You can use it for legal marks, typographic marks, math symbols, arrows, emoji, or any custom symbol you add.
-
-## Why SymbolKey exists
-
-<img align="left" src=".github/README-SymbolKey-screenshot.png" alt="Screenshot of SymbolKey GUI" width="350" />
-
-I kept searching the web for things like "gbp symbol", "euro symbol", "rupee symbol", "yen symbol", "copyright symbol", and "section sign", then copying the character from the results. That is slow for something that should take one keystroke.
-
-Key remapping tools help with simple substitutions, but they usually map one key or key combination to one output. SymbolKey is different: one configurable hotkey can cycle through a list of symbols that you control.
-
-<br clear="right" />
+Press your chosen hotkey once to cycle through symbols such as `$`, `€`, `£`, `₹`, and `¥`, but it is not limited to currency. You can use it for legal marks, typographic marks, math symbols, arrows, emoji, or any custom symbol you add. This makes one key combination work for symbols you might otherwise search for, copy, paste, or memorize Alt codes for.
 
 ## Features
+
+<img align="left" hspace="20" src=".github/README-SymbolKey-screenshot.png" alt="Screenshot of SymbolKey GUI" width="350" />
 
 - Type useful symbols from any app with a single configurable hotkey.
 - Press the hotkey repeatedly to cycle through enabled symbols in order.
@@ -27,6 +17,14 @@ Key remapping tools help with simple substitutions, but they usually map one key
 - Choose your own hotkey with a standard Windows hotkey picker.
 - Settings persist automatically between sessions.
 - Runs quietly from the Windows system tray.
+
+<br clear="left" />
+
+## Why SymbolKey exists
+
+I kept searching the web for things like "gbp symbol", "euro symbol", "rupee symbol", "yen symbol", "copyright symbol", and "section sign", then copying the character from the results. That is slow for something that should take one keystroke.
+
+Key remapping tools help with simple substitutions, but they usually map one key or key combination to one output. SymbolKey is different: one configurable hotkey can cycle through a list of symbols that you control.
 
 ## Good Uses
 
@@ -39,21 +37,27 @@ Key remapping tools help with simple substitutions, but they usually map one key
 | Math and technical notes | `±`, `×`, `÷`, `≤`, `≥` |
 | Personal shortcuts | Any symbol or short Unicode text you add |
 
-## Requirements
-
-- Windows
-- [AutoHotkey v2.0+](https://www.autohotkey.com)
-
 ## Installation & Usage
+
+### Compiled .exe
+
+1. Just download the latest executable from the [Releases](../../releases/latest) page and run it!
+2. On every run, the Settings window opens automatically so you can configure your symbols and hotkey.
+3. Press the hotkey anywhere to type the first enabled symbol. The default hotkey is `Shift+4`.
+4. Press the hotkey again within 3 seconds to replace the symbol with the next enabled symbol.
+
+### Raw script .ahk
+
+You can also inspect the script and run it yourself. 
 
 1. Download and install [AutoHotkey v2](https://www.autohotkey.com).
 2. Download `SymbolKey.ahk` from this repo.
 3. Double-click `SymbolKey.ahk` to run it.
-4. On first run, the Settings window opens automatically so you can configure your symbols and hotkey.
-5. Press the hotkey anywhere to type the first enabled symbol. The default hotkey is `Shift+4`.
-6. Press the hotkey again within 3 seconds to replace the symbol with the next enabled symbol.
+4. (Optional) To compile the .exe yourself, use the Ahk2Exe utility that comes with AutoHotkey. Point it to the script and the .ico file.
 
-To start SymbolKey automatically when you log in, create a shortcut to `SymbolKey.ahk` and place it in your Windows Startup folder (`shell:startup`).
+### Run on startup/logon
+
+To start SymbolKey automatically when you log in, create a shortcut to `SymbolKey.exe` or `SymbolKey.ahk` and place it in your Windows Startup folder (`shell:startup`).
 
 ## Configuration
 
@@ -113,6 +117,8 @@ Holding a modifier key such as `Shift` or `Ctrl` by itself does not reset the cy
 | Nothing types in a password box or secure field | Secure fields may block simulated keystrokes by design. |
 | The hotkey field shows `None` while setting a hotkey | Choose a supported combination. `Backspace`, `Delete`, lone modifiers, and some reserved Windows shortcuts cannot be captured. |
 | Settings disappeared | Check whether `SymbolKey.ini` is next to `SymbolKey.ahk`. If it is missing, SymbolKey recreates it with defaults. |
+
+If you can't get it to work, [create a new issue](https://github.com/sstoilovABLE/currency-switcher/issues/new).
 
 ## FAQ
 
