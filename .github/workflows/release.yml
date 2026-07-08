@@ -77,4 +77,4 @@ jobs:
 
           gh release create "$env:GITHUB_REF_NAME" "$env:RELEASE_ASSET" `
             --title "$env:GITHUB_REF_NAME" `
-            --generate-notes
+            --notes-from-tag
