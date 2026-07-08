@@ -10,7 +10,7 @@ It works well for currency symbols such as `$`, `€`, `£`, `₹`, and `¥`, bu
 
 ## Why SymbolKey exists
 
-<img align="left" hspace="20" src=".github/README-SymbolKey-screenshot.png" alt="Screenshot of SymbolKey GUI" width="350" />
+<img align="left" src=".github/README-SymbolKey-screenshot.png" alt="Screenshot of SymbolKey GUI" width="350" />
 
 I kept searching the web for things like "gbp symbol", "euro symbol", "rupee symbol", "yen symbol", "copyright symbol", and "section sign", then copying the character from the results. That is slow for something that should take one keystroke.
 
