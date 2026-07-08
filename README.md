@@ -16,6 +16,8 @@ I kept searching the web for things like "gbp symbol", "euro symbol", "rupee sym
 
 Key remapping tools help with simple substitutions, but they usually map one key or key combination to one output. SymbolKey is different: one configurable hotkey can cycle through a list of symbols that you control.
 
+<br clear="right" />
+
 ## Features
 
 - Type useful symbols from any app with a single configurable hotkey.
