@@ -15,6 +15,7 @@ Press your chosen hotkey once to cycle through symbols such as `$`, `€`, `£`,
 - Built-in examples include `$`, `€`, `£`, `₹`, `¥`, `§`, `©`, and `™`.
 - Add your own symbols, rename them, enable or disable them, and reorder the cycle.
 - Choose your own hotkey with a standard Windows hotkey picker.
+- Optionally hide the Settings window on startup so SymbolKey launches straight to the tray.
 - Settings persist automatically between sessions.
 - Runs quietly from the Windows system tray.
 
@@ -42,7 +43,7 @@ Key remapping tools help with simple substitutions, but they usually map one key
 ### Compiled .exe
 
 1. Just download the latest executable from the [Releases](../../releases/latest) page and run it!
-2. On every run, the Settings window opens automatically so you can configure your symbols and hotkey.
+2. On every run, the Settings window opens automatically so you can configure your symbols and hotkey. (You can turn this off with the **Don't show this window on startup** checkbox once you're set up.)
 3. Press the hotkey anywhere to type the first enabled symbol. The default hotkey is `Shift+4`.
 4. Press the hotkey again within 3 seconds to replace the symbol with the next enabled symbol.
 
@@ -71,6 +72,7 @@ Right-click the tray icon and choose **Settings** to open the configuration wind
 | Add a custom symbol | Type the symbol into the text field and click **Add**. |
 | Delete a custom symbol | Select the custom row and click **Delete**. |
 | Change the hotkey | Focus the hotkey field and press the key combination you want. |
+| Hide the window on startup | Check **Don't show this window on startup**. SymbolKey then launches straight to the tray on subsequent runs; open Settings again from the tray icon whenever you need it. |
 
 All settings are saved to `SymbolKey.ini`, stored next to the script, and loaded automatically the next time SymbolKey runs. You can safely delete the `.ini` file; it will be recreated on the next run.
 

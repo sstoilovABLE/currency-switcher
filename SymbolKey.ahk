@@ -48,6 +48,7 @@ LV := 0
 HkCtrl := 0
 LastGoodHotkey := ""            ; last complete hotkey shown in the picker
 CustomEdit := 0
+HideCheck := 0                  ; "Don't show this window on startup" checkbox
 RowKeys := []                   ; parallel to LV rows: original (unrenamed) name of each row
 ExitBtnHwnd := 0                ; used to show a hover tooltip on the Exit Script button
 
@@ -67,8 +68,10 @@ iconPath := A_ScriptDir "\SymbolKey.ico"
 if !A_IsCompiled && FileExist(iconPath)
     TraySetIcon(iconPath)
 
-; Always show the settings GUI on launch
-ShowSettingsGui()
+; Show the settings GUI on launch unless the user opted out (see the
+; "Don't show this window on startup" checkbox in Settings).
+if (IniRead(SettingsFile, "General", "HideOnStartup", "0") != "1")
+    ShowSettingsGui()
 
 return
 
@@ -167,10 +170,11 @@ LoadSettings() {
     }
 }
 
-SaveSettings(symbols, hotkeyStr, customSymbols, names) {
+SaveSettings(symbols, hotkeyStr, customSymbols, names, hideOnStartup) {
     global SettingsFile
     try FileDelete(SettingsFile)
     IniWrite(hotkeyStr, SettingsFile, "General", "Hotkey")
+    IniWrite(hideOnStartup ? "1" : "0", SettingsFile, "General", "HideOnStartup")
     for i, sym in symbols
         IniWrite(sym, SettingsFile, "Symbols", "Symbol" i)
     for i, entry in customSymbols
@@ -218,7 +222,7 @@ LoadNames() {
 ; ------------------------------------------------------------
 
 ShowSettingsGui() {
-    global SettingsGui, LV, HkCtrl, LastGoodHotkey, CustomEdit, RowKeys, ExitBtnHwnd
+    global SettingsGui, LV, HkCtrl, LastGoodHotkey, CustomEdit, RowKeys, ExitBtnHwnd, HideCheck
     global DefaultSymbols, ActiveSymbols, CurrentHotkey, SettingsFile, ScriptVersion
 
     if (SettingsGui is Gui) {
@@ -277,7 +281,12 @@ ShowSettingsGui() {
 
     ; Resume the rest of the layout below the ListView, not below the buttons.
     LV.GetPos(&lvX, &lvY, &lvW, &lvH)
-    SettingsGui.Add("Text", "xm y" (lvY + lvH + 15), "Add a custom symbol:")
+    HideCheck := SettingsGui.Add("Checkbox", "xm y" (lvY + lvH + 12),
+        "Don't show this window on startup")
+    if (IniRead(SettingsFile, "General", "HideOnStartup", "0") = "1")
+        HideCheck.Value := 1
+
+    SettingsGui.Add("Text", "xm y+15", "Add a custom symbol:")
     CustomEdit := SettingsGui.Add("Edit", "x+10 w80 Limit10")
     SettingsGui.Add("Button", "x+10 w60", "Add").OnEvent("Click", AddCustom)
 
@@ -466,7 +475,7 @@ ExitClicked(*) {
 ; them to the .ini. Returns true on success, false if validation failed
 ; (in which case the GUI is left open so the user can fix it).
 ApplySettingsFromGui() {
-    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys, CurrentHotkey
+    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys, CurrentHotkey, HideCheck
     symbols := []
     customs := []
     names := []
@@ -497,7 +506,7 @@ ApplySettingsFromGui() {
     }
     ActiveSymbols := symbols
     CycleIndex := 0
-    SaveSettings(symbols, hk, customs, names)
+    SaveSettings(symbols, hk, customs, names, HideCheck.Value)
     return true
 }
 
