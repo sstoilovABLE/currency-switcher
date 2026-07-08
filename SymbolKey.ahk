@@ -17,7 +17,7 @@ DefaultSymbols := [
     ["€", "Euro"],
     ["£", "British Pound"],
     ["₹", "Indian Rupee"],
-    ["¥", "Yuan / Yen (Renminbi)"],
+    ["¥", "Yuan / Yen"],
     ["§", "Section"],
     ["©", "Copyright"],
     ["™", "Trademark"],
@@ -48,6 +48,7 @@ LV := 0
 HkCtrl := 0
 LastGoodHotkey := ""            ; last complete hotkey shown in the picker
 CustomEdit := 0
+HideCheck := 0                  ; "Don't show this window on startup" checkbox
 RowKeys := []                   ; parallel to LV rows: original (unrenamed) name of each row
 ExitBtnHwnd := 0                ; used to show a hover tooltip on the Exit Script button
 
@@ -67,8 +68,10 @@ iconPath := A_ScriptDir "\SymbolKey.ico"
 if !A_IsCompiled && FileExist(iconPath)
     TraySetIcon(iconPath)
 
-; Always show the settings GUI on launch
-ShowSettingsGui()
+; Show the settings GUI on launch unless the user opted out (see the
+; "Don't show this window on startup" checkbox in Settings).
+if (IniRead(SettingsFile, "General", "HideOnStartup", "0") != "1")
+    ShowSettingsGui()
 
 return
 
@@ -167,10 +170,11 @@ LoadSettings() {
     }
 }
 
-SaveSettings(symbols, hotkeyStr, customSymbols, names) {
+SaveSettings(symbols, hotkeyStr, customSymbols, names, hideOnStartup) {
     global SettingsFile
     try FileDelete(SettingsFile)
     IniWrite(hotkeyStr, SettingsFile, "General", "Hotkey")
+    IniWrite(hideOnStartup ? "1" : "0", SettingsFile, "General", "HideOnStartup")
     for i, sym in symbols
         IniWrite(sym, SettingsFile, "Symbols", "Symbol" i)
     for i, entry in customSymbols
@@ -218,7 +222,7 @@ LoadNames() {
 ; ------------------------------------------------------------
 
 ShowSettingsGui() {
-    global SettingsGui, LV, HkCtrl, LastGoodHotkey, CustomEdit, RowKeys, ExitBtnHwnd
+    global SettingsGui, LV, HkCtrl, LastGoodHotkey, CustomEdit, RowKeys, ExitBtnHwnd, HideCheck
     global DefaultSymbols, ActiveSymbols, CurrentHotkey, SettingsFile, ScriptVersion
 
     if (SettingsGui is Gui) {
@@ -236,9 +240,9 @@ ShowSettingsGui() {
         "Press the hotkey repeatedly to cycle. The cycle resets after "
         Round(CycleTimeoutMs / 1000) " seconds of inactivity, or as soon as "
         "you press any other keyboard key — whichever happens first.")
-    LV := SettingsGui.Add("ListView", "w360 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
-    LV.ModifyCol(1, 80)
-    LV.ModifyCol(2, 250)
+    LV := SettingsGui.Add("ListView", "w270 r10 Checked -Multi NoSortHdr", ["Symbol", "Name"])
+    LV.ModifyCol(1, 55)
+    LV.ModifyCol(2, 195)
     LV.OnEvent("DoubleClick", RenameRow)
 
     ; Build row list: saved order first (enabled), then remaining known symbols
@@ -268,10 +272,19 @@ ShowSettingsGui() {
         RowKeys.Push(row[2])
     }
 
-    SettingsGui.Add("Button", "xm w80", "Move Up").OnEvent("Click", (*) => MoveRow(-1))
-    SettingsGui.Add("Button", "x+10 w80", "Move Down").OnEvent("Click", (*) => MoveRow(1))
-    SettingsGui.Add("Button", "x+10 w80", "Rename").OnEvent("Click", RenameClicked)
-    SettingsGui.Add("Button", "x+10 w80", "Delete").OnEvent("Click", DeleteRow)
+    ; Action buttons run vertically to the right of the list to save space and
+    ; cut the whitespace a horizontal row left underneath the ListView.
+    SettingsGui.Add("Button", "x+10 yp w80", "Move Up").OnEvent("Click", (*) => MoveRow(-1))
+    SettingsGui.Add("Button", "xp y+8 w80", "Move Down").OnEvent("Click", (*) => MoveRow(1))
+    SettingsGui.Add("Button", "xp y+8 w80", "Rename").OnEvent("Click", RenameClicked)
+    SettingsGui.Add("Button", "xp y+8 w80", "Delete").OnEvent("Click", DeleteRow)
+
+    ; Resume the rest of the layout below the ListView, not below the buttons.
+    LV.GetPos(&lvX, &lvY, &lvW, &lvH)
+    HideCheck := SettingsGui.Add("Checkbox", "xm y" (lvY + lvH + 12),
+        "Don't show this window on startup")
+    if (IniRead(SettingsFile, "General", "HideOnStartup", "0") = "1")
+        HideCheck.Value := 1
 
     SettingsGui.Add("Text", "xm y+15", "Add a custom symbol:")
     CustomEdit := SettingsGui.Add("Edit", "x+10 w80 Limit10")
@@ -462,7 +475,7 @@ ExitClicked(*) {
 ; them to the .ini. Returns true on success, false if validation failed
 ; (in which case the GUI is left open so the user can fix it).
 ApplySettingsFromGui() {
-    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys, CurrentHotkey
+    global LV, HkCtrl, ActiveSymbols, CycleIndex, RowKeys, CurrentHotkey, HideCheck
     symbols := []
     customs := []
     names := []
@@ -493,7 +506,7 @@ ApplySettingsFromGui() {
     }
     ActiveSymbols := symbols
     CycleIndex := 0
-    SaveSettings(symbols, hk, customs, names)
+    SaveSettings(symbols, hk, customs, names, HideCheck.Value)
     return true
 }
 
