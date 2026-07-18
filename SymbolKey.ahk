@@ -127,10 +127,12 @@ StartInterruptWatcher() {
     OtherKeyHook.KeyOpt("{All}", "N")
     OtherKeyHook.OnKeyDown := InterruptKeyDown
     OtherKeyHook.Start()
+    SetTimer(ResetCycleAfterTimeout, -CycleTimeoutMs)
 }
 
 StopInterruptWatcher() {
     global OtherKeyHook
+    SetTimer(ResetCycleAfterTimeout, 0)
     if IsObject(OtherKeyHook) {
         try OtherKeyHook.Stop()
         OtherKeyHook := 0
@@ -143,6 +145,12 @@ InterruptKeyDown(ih, vk, sc) {
     global ModifierVKs, CycleIndex, Suppressing
     if Suppressing || ModifierVKs.Has(vk) || IsCurrentHotkeyPress(vk)
         return
+    CycleIndex := 0
+    StopInterruptWatcher()
+}
+
+ResetCycleAfterTimeout() {
+    global CycleIndex
     CycleIndex := 0
     StopInterruptWatcher()
 }
