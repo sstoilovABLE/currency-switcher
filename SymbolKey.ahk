@@ -122,28 +122,33 @@ OnSymbolKey(*) {
 ; could trigger AutoHotkey's "too many hotkeys" warning during normal typing.
 StartInterruptWatcher() {
     global OtherKeyHook
-    StopInterruptWatcher()
-    OtherKeyHook := InputHook("V L0")
-    OtherKeyHook.KeyOpt("{All}", "N")
-    OtherKeyHook.OnKeyDown := InterruptKeyDown
-    OtherKeyHook.Start()
+    ; Build the InputHook once and reuse it; restarting a stopped hook is far
+    ; cheaper than allocating a new one (and re-hooking the keyboard) on every
+    ; keypress, which matters while the hotkey auto-repeats.
+    if !IsObject(OtherKeyHook) {
+        OtherKeyHook := InputHook("V L0")
+        OtherKeyHook.KeyOpt("{All}", "N")
+        OtherKeyHook.OnKeyDown := InterruptKeyDown
+    }
+    if !OtherKeyHook.InProgress
+        OtherKeyHook.Start()
     SetTimer(ResetCycleAfterTimeout, -CycleTimeoutMs)
 }
 
 StopInterruptWatcher() {
     global OtherKeyHook
     SetTimer(ResetCycleAfterTimeout, 0)
-    if IsObject(OtherKeyHook) {
+    if (IsObject(OtherKeyHook) && OtherKeyHook.InProgress)
         try OtherKeyHook.Stop()
-        OtherKeyHook := 0
-    }
 }
 
-; Ignore modifiers, the symbol hotkey itself, and this script's simulated
-; keystrokes; anything else immediately ends the current cycle.
+; Ignore modifiers and the symbol hotkey itself; anything else immediately
+; ends the current cycle. (The watcher is always stopped before this script
+; sends its own keystrokes, so it never observes them and no Suppressing check
+; is needed here.)
 InterruptKeyDown(ih, vk, sc) {
-    global ModifierVKs, CycleIndex, Suppressing
-    if Suppressing || ModifierVKs.Has(vk) || IsCurrentHotkeyPress(vk)
+    global ModifierVKs, CycleIndex
+    if ModifierVKs.Has(vk) || IsCurrentHotkeyPress(vk)
         return
     CycleIndex := 0
     StopInterruptWatcher()
@@ -182,13 +187,19 @@ IsCurrentHotkeyPress(vk) {
     if (vk != keyVk)
         return false
     mods := SubStr(CurrentHotkey, 1, StrLen(CurrentHotkey) - StrLen(key))
-    if (InStr(mods, "+") && !GetKeyState("Shift", "P"))
+    ; The symbol hotkey is registered without a wildcard, so AutoHotkey only
+    ; fires it on an *exact* modifier match. Mirror that: every modifier the
+    ; hotkey names must be held, and every modifier it does not name must be
+    ; released. Otherwise this is a different keystroke (e.g. Ctrl+Shift+4 vs a
+    ; Shift+4 hotkey) and it should reset the cycle rather than be ignored.
+    winDown := GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
+    if ((InStr(mods, "+") > 0) != (GetKeyState("Shift", "P") = 1))
         return false
-    if (InStr(mods, "^") && !GetKeyState("Ctrl", "P"))
+    if ((InStr(mods, "^") > 0) != (GetKeyState("Ctrl", "P") = 1))
         return false
-    if (InStr(mods, "!") && !GetKeyState("Alt", "P"))
+    if ((InStr(mods, "!") > 0) != (GetKeyState("Alt", "P") = 1))
         return false
-    if (InStr(mods, "#") && !(GetKeyState("LWin", "P") || GetKeyState("RWin", "P")))
+    if ((InStr(mods, "#") > 0) != (winDown = 1))
         return false
     return true
 }
@@ -361,10 +372,12 @@ ShowSettingsGui() {
     WinActivate("ahk_id " SettingsGui.Hwnd)
 }
 
-; While the hotkey field has keyboard focus, suspend the symbol hotkey and
-; the per-key interrupt hotkeys. Otherwise pressing e.g. Shift+4 to *set* the
-; hotkey would instead fire the symbol hotkey - swallowing the keystroke
-; before the field could see it, which is what made Shift+4 show up as "None".
+; While the hotkey field has keyboard focus, suspend the symbol hotkey.
+; Otherwise pressing e.g. Shift+4 to *set* the hotkey would instead fire the
+; symbol hotkey - swallowing the keystroke before the field could see it, which
+; is what made Shift+4 show up as "None". (The symbol-cycle interrupt watcher is
+; an InputHook, not a hotkey, so Suspend does not touch it; that's fine, since a
+; cycle can't be mid-flight while you're editing the hotkey field.)
 ; The Hotkey control has no Focus/LoseFocus event, so we poll Gui.FocusedCtrl
 ; (A_IsSuspended is the single source of truth, so this stays correct even
 ; across window close/reopen).
